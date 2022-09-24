@@ -13,14 +13,15 @@ class LifecycleWidget extends StatefulWidget {
   LifecycleWidget(
       {Key? key,
         required this.child,
-        required this.imageSize,
+        required this.imageSizePx,
         required this.onDispose,
         required this.onLoad,
         required this.url})
       : super(key: key);
 
   final Widget child;
-  final Size imageSize;
+  // image size in pixels
+  final Size imageSizePx;
   final String url;
 
   ValueChanged<CachedImageInfo> onLoad;
@@ -37,7 +38,7 @@ class _LifecycleWidgetState extends State<LifecycleWidget> {
   void initState() {
     super.initState();
     print("$this on init");
-    cachedImageInfo = CachedImageInfo(widget.url, widget.imageSize);
+    cachedImageInfo = CachedImageInfo(widget.url, widget.imageSizePx);
     widget.onLoad(cachedImageInfo);
   }
 

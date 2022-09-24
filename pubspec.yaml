@@ -15,7 +15,12 @@ dependencies:
 #  flutter_cache_manager:
 #    path: H:/workspace/dev/flutter_cache_manager/flutter_cache_manager
   cached_network_image:
-    path: H:/workspace/dev/flutter_cached_network_image/cached_network_image
+    git:
+      url: git://github.com/jixiaoyong/flutter_cached_network_image.git
+      path: cached_network_image
+      ref: dev_flutter2
+
+#    path: H:/workspace/dev/flutter_cached_network_image/cached_network_image
 
 dev_dependencies:
   flutter_test:
@@ -24,7 +29,11 @@ dev_dependencies:
 
 dependency_overrides:
   flutter_cache_manager:
-    path: H:/workspace/dev/flutter_cache_manager/flutter_cache_manager
+    git:
+      url: https://github.com/jixiaoyong/flutter_cache_manager.git
+      path: flutter_cache_manager
+#  flutter_cache_manager:
+#    path: H:/workspace/dev/flutter_cache_manager/flutter_cache_manager
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

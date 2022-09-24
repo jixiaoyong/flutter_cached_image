@@ -54,6 +54,7 @@ class CancelableCacheManage extends CacheManager with ImageCacheManager {
     if (maxHeight != null) resizedKey += '_h$maxHeight';
     resizedKey += '_$key';
 
+    // 先尝试从缓存中读取压缩过的图片
     var fromCache = await getFileFromCache(resizedKey);
     if (fromCache != null) {
       yield fromCache;
@@ -62,6 +63,7 @@ class CancelableCacheManage extends CacheManager with ImageCacheManager {
       }
       withProgress = false;
     }
+    // 如果没有的话就从cache或者网络获取未压缩的图片
     var runningResize = _runningResizes[resizedKey];
     if (runningResize == null) {
       runningResize = _fetchedResizedFile(
@@ -81,6 +83,7 @@ class CancelableCacheManage extends CacheManager with ImageCacheManager {
 
   final Map<String, Stream<FileResponse>> _runningResizes = {};
   final Queue<ResizeTask> _resizeQueue = Queue();
+  ResizeTask? currentResizeTask = null;
 
   Future<FileInfo> _resizeImageFile(
     FileInfo originalFile,
@@ -138,13 +141,19 @@ class CancelableCacheManage extends CacheManager with ImageCacheManager {
   }
 
   Future<void> _checkResizeQueue() async {
-    if (_resizeQueue.isEmpty) {
+    if (_resizeQueue.isEmpty || currentResizeTask != null) {
       return;
     }
     // background delay
-    await Future.delayed(const Duration(milliseconds: 200));
-    var task = _resizeQueue.removeFirst();
-    await _composeImageFile(task);
+    // await Future.delayed(const Duration(milliseconds: 500));
+    // try {
+    //   currentResizeTask = _resizeQueue.removeFirst();
+    // } catch (e) {
+    //   // do nothing here
+    // }
+    // if (currentResizeTask != null) {
+    //   await _composeImageFile(currentResizeTask!);
+    // }
   }
 
   _composeImageFile(ResizeTask task) async {
@@ -167,12 +176,14 @@ class CancelableCacheManage extends CacheManager with ImageCacheManager {
         key: task.key,
       );
       try {
-        var originPath = io.File(task.originPath);
-        originPath.delete();
+        // var originPath = io.File(task.originPath);
+        // await originPath.delete();
       } on Exception catch (e) {
         // ignore exception
       }
       file = null;
     }
+    currentResizeTask = null;
+    _checkResizeQueue();
   }
 }

@@ -7,9 +7,32 @@ import 'package:flutter/material.dart';
  * @date : 9/22/2022
  */
 class CachedImageInfo {
-  CachedImageInfo( this.url, this.widgetSize,{this.key,});
+  const CachedImageInfo(
+    this.url,
+    this.widgetSize, {
+    String? key,
+  }) : _key = key;
 
-  String url;
-  String? key;
-  Size widgetSize;
+  final String url;
+  final String? _key;
+  final Size widgetSize;
+
+  @override
+  bool operator ==(dynamic other) {
+    if (other is CachedImageInfo) {
+      return other.url == url &&
+          other.widgetSize == widgetSize &&
+          other._key == _key;
+    }
+    return false;
+  }
+
+  get key {
+    return _key ??
+        "resized_w${widgetSize.width.toInt()}_h${widgetSize.height.toInt()}_${url}";
+  }
+
+  int get memorySize {
+    return (widgetSize.width * widgetSize.height * 4).toInt();
+  }
 }

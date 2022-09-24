@@ -3,6 +3,7 @@ import 'dart:collection';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/widgets.dart';
 
+import 'cancelable_cache_manage.dart';
 import 'img/cached_image_info.dart';
 
 /**
@@ -13,6 +14,8 @@ import 'img/cached_image_info.dart';
  */
 class ImageCacheQueueManage {
   static const String DEFAULT_QUEUE_NAME = "DefaultQueueName";
+  static const int MAX_IMAGE_FILE_SIZE_BYTE = 50 * 1024 * 1024; //50mb
+  static const int MAX_IMAGE_PENDING_COUNT = 10;
 
   static ImageCacheQueueManage _instance = ImageCacheQueueManage._();
 
@@ -21,6 +24,7 @@ class ImageCacheQueueManage {
   ImageCacheQueueManage._();
 
   final Map<String, Queue<CachedImageInfo>> queueMap = {};
+  final Map<String, int> queueSizeMap = {};
   CachedImageInfo? currentInfo;
 
   addCacheInfo(CachedImageInfo cacheInfo, {String? key}) {
@@ -28,15 +32,28 @@ class ImageCacheQueueManage {
     var queue =
         queueMap.putIfAbsent(keyOfQueue, () => Queue<CachedImageInfo>());
     queue.add(cacheInfo);
-    _checkQueue(queue);
+
+    int queueSize =
+        queueSizeMap.putIfAbsent(keyOfQueue, () => 0) + cacheInfo.memorySize;
+    queueSizeMap.update(keyOfQueue, (value) => queueSize);
+    _checkQueue(queue, totalMemorySize: queueSize);
   }
 
   removeCacheInfo(CachedImageInfo cacheInfo, {String? key}) {
     var keyOfQueue = key ?? DEFAULT_QUEUE_NAME;
     var queue =
         queueMap.putIfAbsent(keyOfQueue, () => Queue<CachedImageInfo>());
-    queue.remove(cacheInfo);
-    _checkQueue(queue);
+    var isRemoved = queue.remove(cacheInfo);
+    int queueSize = queueSizeMap.putIfAbsent(keyOfQueue, () => 0);
+    if (isRemoved) {
+      queueSize -= cacheInfo.memorySize;
+      if (queueSize < 0) {
+        queueSize = 0;
+      }
+      queueSizeMap.update(keyOfQueue, (value) => queueSize);
+    }
+
+    _checkQueue(queue, totalMemorySize: queueSize);
   }
 
   cleanQueue({String? key}) {
@@ -47,8 +64,11 @@ class ImageCacheQueueManage {
   }
 
   _checkQueue(Queue<CachedImageInfo> cacheImageQueue,
-      {bool cleanAll = false}) async {
-    if ((!cleanAll && cacheImageQueue.length < 10) || currentInfo != null) {
+      {bool cleanAll = false, int totalMemorySize = 0}) async {
+    if ((!cleanAll &&
+            cacheImageQueue.length < MAX_IMAGE_PENDING_COUNT &&
+            totalMemorySize < MAX_IMAGE_FILE_SIZE_BYTE) ||
+        currentInfo != null) {
       return;
     }
     currentInfo = cacheImageQueue.removeFirst();
@@ -62,11 +82,13 @@ class ImageCacheQueueManage {
       var url = currentInfo?.url;
       var size = currentInfo?.widgetSize;
 
-      if (url == null || size == null) {
+      if (currentInfo == null || url == null || size == null) {
         return;
       }
-      var isRemoved =
-          await CachedNetworkImage.evictFromCache(url, onlyCache: true);
+      var isRemoved = await CachedNetworkImage.evictFromCache(url,
+          cacheKey: currentInfo!.key,
+          onlyCache: true,
+          cacheManager: CancelableCacheManage.instance());
       if (!isRemoved) {
         var result = await ResizeImage(
                 CachedNetworkImageProvider(
@@ -77,9 +99,9 @@ class ImageCacheQueueManage {
                 width: size.width.toInt(),
                 height: size.height.toInt())
             .evict();
-        print("${url} evict result: $result");
+        print("_checkQueue ${url} evict result: $result");
       } else {
-        print("${url} evict result: $isRemoved");
+        print("_checkQueue ${url} evict result: $isRemoved");
       }
     } on Exception catch (e) {
       // do nothing
