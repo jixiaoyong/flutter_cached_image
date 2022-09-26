@@ -72,9 +72,9 @@ class ImageCacheQueueManage {
       return;
     }
     currentInfo = cacheImageQueue.removeFirst();
-    var delayMs = 200;
+    var delayMs = 3000;
     if (cacheImageQueue.length > 50 || cleanAll) {
-      delayMs = 10;
+      delayMs = 1000;
     }
     await Future.delayed(Duration(milliseconds: delayMs));
     try {
