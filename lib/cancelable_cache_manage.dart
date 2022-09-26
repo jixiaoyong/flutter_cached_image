@@ -145,15 +145,15 @@ class CancelableCacheManage extends CacheManager with ImageCacheManager {
       return;
     }
     // background delay
-    // await Future.delayed(const Duration(milliseconds: 500));
-    // try {
-    //   currentResizeTask = _resizeQueue.removeFirst();
-    // } catch (e) {
-    //   // do nothing here
-    // }
-    // if (currentResizeTask != null) {
-    //   await _composeImageFile(currentResizeTask!);
-    // }
+    await Future.delayed(const Duration(milliseconds: 500));
+    try {
+      currentResizeTask = _resizeQueue.removeFirst();
+    } catch (e) {
+      // do nothing here
+    }
+    if (currentResizeTask != null) {
+      await _composeImageFile(currentResizeTask!);
+    }
   }
 
   _composeImageFile(ResizeTask task) async {
@@ -176,8 +176,8 @@ class CancelableCacheManage extends CacheManager with ImageCacheManager {
         key: task.key,
       );
       try {
-        // var originPath = io.File(task.originPath);
-        // await originPath.delete();
+        var originPath = io.File(task.originPath);
+        await originPath.delete();
       } on Exception catch (e) {
         // ignore exception
       }
